@@ -22,13 +22,21 @@ export async function classifyTask(
     })
     .join('\n\n');
 
-  const prompt = `Eres un clasificador de tareas. El usuario tiene las siguientes carpetas:
+  const folderNames = folders.map((f) => f.name).join(', ');
 
+  const prompt = `Eres un clasificador de tareas. Tu trabajo es asignar cada tarea a la carpeta más apropiada.
+
+CARPETAS DISPONIBLES:
 ${foldersDescription}
 
-Tarea a clasificar: "${taskText}"
+TAREA A CLASIFICAR: "${taskText}"
 
-Responde SOLO con el nombre exacto de la carpeta donde debe ir esta tarea. Si no estás seguro, responde "General".`;
+INSTRUCCIONES:
+- Analiza el contexto y palabras clave de cada carpeta
+- Elige la carpeta que mejor se relacione con la tarea
+- DEBES elegir una de estas carpetas: ${folderNames}
+- Responde ÚNICAMENTE con el nombre exacto de la carpeta, sin explicaciones
+- Solo responde "General" si la tarea no tiene NINGUNA relación con ninguna carpeta`;
 
   try {
     const response = await fetch(API_URL, {
