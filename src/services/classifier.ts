@@ -47,12 +47,18 @@ Responde SOLO con el nombre exacto de la carpeta donde debe ir esta tarea. Si no
       }),
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Classifier] API error:', response.status, errorText);
+      return null;
+    }
 
     const data = await response.json();
     const content = data.content?.[0]?.text?.trim();
+    console.log('[Classifier] LLM response:', content);
     return content || null;
-  } catch {
+  } catch (error) {
+    console.error('[Classifier] Exception:', error);
     return null;
   }
 }
@@ -65,13 +71,19 @@ export function findFolderByName(
   suggestedName: string,
   folders: Folder[]
 ): Folder | null {
-  if (!suggestedName || suggestedName === 'General') return null;
+  if (!suggestedName || suggestedName.toLowerCase() === 'general') {
+    console.log('[Classifier] No folder match - "General" or empty');
+    return null;
+  }
 
-  const lower = suggestedName.toLowerCase();
+  const lower = suggestedName.toLowerCase().trim();
 
   // Exact match
-  const exact = folders.find((f) => f.name.toLowerCase() === lower);
-  if (exact) return exact;
+  const exact = folders.find((f) => f.name.toLowerCase().trim() === lower);
+  if (exact) {
+    console.log('[Classifier] Exact match found:', exact.name);
+    return exact;
+  }
 
   // Partial match (suggested name contains folder name or vice versa)
   const partial = folders.find(
@@ -79,5 +91,11 @@ export function findFolderByName(
       f.name.toLowerCase().includes(lower) ||
       lower.includes(f.name.toLowerCase())
   );
-  return partial || null;
+  if (partial) {
+    console.log('[Classifier] Partial match found:', partial.name);
+    return partial;
+  }
+
+  console.log('[Classifier] No match found for:', suggestedName, 'in folders:', folders.map(f => f.name));
+  return null;
 }

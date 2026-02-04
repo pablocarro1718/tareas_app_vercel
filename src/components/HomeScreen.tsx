@@ -68,10 +68,14 @@ export function HomeScreen({ onOpenFolder }: HomeScreenProps) {
 
       if (isOnline && apiKey) {
         // Try LLM classification
+        console.log('[HomeScreen] Classifying task:', text);
+        console.log('[HomeScreen] Available folders:', folders.map(f => ({ name: f.name, llmContext: f.llmContext, keywords: f.keywords })));
         const suggestedName = await classifyTask(text, folders, apiKey);
+        console.log('[HomeScreen] LLM suggested:', suggestedName);
         const matchedFolder = suggestedName
           ? findFolderByName(suggestedName, folders)
           : null;
+        console.log('[HomeScreen] Matched folder:', matchedFolder?.name ?? 'none, using first');
         targetFolderId = matchedFolder?.id ?? folders[0].id;
       } else if (!isOnline) {
         // Offline: use first folder, queue for later
