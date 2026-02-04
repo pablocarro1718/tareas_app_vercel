@@ -2,6 +2,14 @@ import { v4 as uuid } from 'uuid';
 import { db } from './database';
 import { FOLDER_COLORS } from '../types';
 import type { Folder, TaskGroup, Task, PendingClassification } from '../types';
+import {
+  pushFolder,
+  pushTaskGroup,
+  pushTask,
+  deleteRemoteFolder,
+  deleteRemoteTaskGroup,
+  deleteRemoteTask,
+} from '../services/sync';
 
 // ============================================================
 // Folders
@@ -26,6 +34,7 @@ export async function createFolder(
   };
 
   await db.folders.add(folder);
+  pushFolder(folder);
   return folder;
 }
 
@@ -45,14 +54,25 @@ export async function updateFolder(
     ...changes,
     updatedAt: new Date().toISOString(),
   });
+  const updated = await db.folders.get(id);
+  if (updated) pushFolder(updated);
 }
 
 export async function deleteFolder(id: string): Promise<void> {
+  // Collect IDs for remote deletion before local delete
+  const taskIds = await db.tasks.where('folderId').equals(id).primaryKeys();
+  const groupIds = await db.taskGroups.where('folderId').equals(id).primaryKeys();
+
   await db.transaction('rw', [db.folders, db.taskGroups, db.tasks], async () => {
     await db.tasks.where('folderId').equals(id).delete();
     await db.taskGroups.where('folderId').equals(id).delete();
     await db.folders.delete(id);
   });
+
+  // Remote cleanup (fire-and-forget)
+  for (const tid of taskIds) deleteRemoteTask(tid);
+  for (const gid of groupIds) deleteRemoteTaskGroup(gid);
+  deleteRemoteFolder(id);
 }
 
 export async function reorderFolders(orderedIds: string[]): Promise<void> {
@@ -62,6 +82,9 @@ export async function reorderFolders(orderedIds: string[]): Promise<void> {
       await db.folders.update(orderedIds[i], { order: i, updatedAt: now });
     }
   });
+  // Push updated folders
+  const folders = await db.folders.toArray();
+  for (const f of folders) pushFolder(f);
 }
 
 // ============================================================
@@ -85,6 +108,7 @@ export async function createTaskGroup(
   };
 
   await db.taskGroups.add(group);
+  pushTaskGroup(group);
   return group;
 }
 
@@ -100,6 +124,8 @@ export async function updateTaskGroup(
     ...changes,
     updatedAt: new Date().toISOString(),
   });
+  const updated = await db.taskGroups.get(id);
+  if (updated) pushTaskGroup(updated);
 }
 
 export async function deleteTaskGroup(id: string): Promise<void> {
@@ -108,6 +134,11 @@ export async function deleteTaskGroup(id: string): Promise<void> {
     await db.tasks.where('taskGroupId').equals(id).modify({ taskGroupId: null });
     await db.taskGroups.delete(id);
   });
+  deleteRemoteTaskGroup(id);
+
+  // Push updated tasks (moved to General)
+  const movedTasks = await db.tasks.filter((t) => t.taskGroupId === null).toArray();
+  for (const t of movedTasks) pushTask(t);
 }
 
 export async function reorderTaskGroups(folderId: string, orderedIds: string[]): Promise<void> {
@@ -117,8 +148,9 @@ export async function reorderTaskGroups(folderId: string, orderedIds: string[]):
       await db.taskGroups.update(orderedIds[i], { order: i, updatedAt: now });
     }
   });
-  // Suppress unused variable warning
-  void folderId;
+  // Push updated groups
+  const groups = await db.taskGroups.where('folderId').equals(folderId).toArray();
+  for (const g of groups) pushTaskGroup(g);
 }
 
 // ============================================================
@@ -167,6 +199,7 @@ export async function createTask(
   };
 
   await db.tasks.add(task);
+  pushTask(task);
   return task;
 }
 
@@ -201,6 +234,8 @@ export async function updateTask(
     ...changes,
     updatedAt: new Date().toISOString(),
   });
+  const updated = await db.tasks.get(id);
+  if (updated) pushTask(updated);
 }
 
 export async function toggleTaskCompleted(id: string): Promise<void> {
@@ -210,6 +245,8 @@ export async function toggleTaskCompleted(id: string): Promise<void> {
     isCompleted: !task.isCompleted,
     updatedAt: new Date().toISOString(),
   });
+  const updated = await db.tasks.get(id);
+  if (updated) pushTask(updated);
 }
 
 export async function archiveTask(id: string): Promise<void> {
@@ -217,10 +254,13 @@ export async function archiveTask(id: string): Promise<void> {
     isArchived: true,
     updatedAt: new Date().toISOString(),
   });
+  const updated = await db.tasks.get(id);
+  if (updated) pushTask(updated);
 }
 
 export async function deleteTask(id: string): Promise<void> {
   await db.tasks.delete(id);
+  deleteRemoteTask(id);
 }
 
 export async function reorderTasks(orderedIds: string[]): Promise<void> {
@@ -230,10 +270,15 @@ export async function reorderTasks(orderedIds: string[]): Promise<void> {
       await db.tasks.update(orderedIds[i], { order: i, updatedAt: now });
     }
   });
+  // Push updated tasks
+  for (const id of orderedIds) {
+    const t = await db.tasks.get(id);
+    if (t) pushTask(t);
+  }
 }
 
 // ============================================================
-// Pending Classifications (cola offline)
+// Pending Classifications (cola offline - solo local)
 // ============================================================
 
 export async function addPendingClassification(
