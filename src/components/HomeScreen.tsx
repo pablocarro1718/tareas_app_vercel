@@ -16,7 +16,6 @@ import { SettingsModal } from './SettingsModal';
 import { useSortable } from '../hooks/useSortable';
 import { parseTaskInput } from '../services/parser';
 import { classifyTask, findFolderByName } from '../services/classifier';
-import { getApiKey } from '../services/apiKey';
 
 interface HomeScreenProps {
   onOpenFolder: (folderId: string) => void;
@@ -63,25 +62,17 @@ export function HomeScreen({ onOpenFolder }: HomeScreenProps) {
     try {
       // Determine target folder
       let targetFolderId: string;
-      const apiKey = getApiKey();
       const isOnline = navigator.onLine;
 
-      if (isOnline && apiKey) {
-        // Try LLM classification
-        console.log('[HomeScreen] Classifying task:', text);
-        console.log('[HomeScreen] Available folders:', folders.map(f => ({ name: f.name, llmContext: f.llmContext, keywords: f.keywords })));
-        const suggestedName = await classifyTask(text, folders, apiKey);
-        console.log('[HomeScreen] LLM suggested:', suggestedName);
+      if (isOnline) {
+        // Try LLM classification via serverless function
+        const suggestedName = await classifyTask(text, folders);
         const matchedFolder = suggestedName
           ? findFolderByName(suggestedName, folders)
           : null;
-        console.log('[HomeScreen] Matched folder:', matchedFolder?.name ?? 'none, using first');
         targetFolderId = matchedFolder?.id ?? folders[0].id;
-      } else if (!isOnline) {
-        // Offline: use first folder, queue for later
-        targetFolderId = folders[0].id;
       } else {
-        // No API key: use first folder
+        // Offline: use first folder, queue for later
         targetFolderId = folders[0].id;
       }
 
