@@ -7,6 +7,7 @@ import {
   toggleTaskCompleted,
   archiveTask,
   updateTaskGroup,
+  deleteTaskGroup,
   updateTask,
   deleteTask,
   updateFolder,
@@ -87,6 +88,10 @@ export function FolderScreen({ folderId, onBack }: FolderScreenProps) {
     onBack();
   };
 
+  const handleDeleteTaskGroup = async (groupId: string) => {
+    await deleteTaskGroup(groupId);
+  };
+
   const handleCreateTaskGroup = async (name: string) => {
     await createTaskGroup({ folderId, name });
     setShowCreateGroup(false);
@@ -156,6 +161,7 @@ export function FolderScreen({ folderId, onBack }: FolderScreenProps) {
             onArchive={handleArchive}
             onClickTask={handleClickTask}
             onToggleCollapse={handleToggleCollapse}
+            onDeleteGroup={handleDeleteTaskGroup}
           />
         ))}
 

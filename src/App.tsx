@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { HomeScreen } from './components/HomeScreen';
 import { FolderScreen } from './components/FolderScreen';
 import { useOfflineQueue } from './hooks/useOfflineQueue';
-import { startSyncListeners, pushAllToFirestore } from './services/sync';
+import { startSyncListeners } from './services/sync';
 
 type Screen =
   | { type: 'home' }
@@ -13,10 +13,10 @@ function App() {
   useOfflineQueue();
 
   useEffect(() => {
-    // Start listening to Firestore changes
+    // Start listening to Firestore changes (bidirectional sync)
+    // Individual operations already push to Firestore on create/update/delete,
+    // so we only need to listen for remote changes here.
     startSyncListeners();
-    // Push any existing local data to Firestore
-    pushAllToFirestore();
   }, []);
 
   if (screen.type === 'home') {
