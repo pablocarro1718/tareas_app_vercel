@@ -8,6 +8,7 @@ interface TaskGroupSectionProps {
   onToggleComplete: (id: string) => void;
   onArchive: (id: string) => void;
   onClickTask: (task: Task) => void;
+  onDeleteTask: (id: string) => void;
   onToggleCollapse?: (groupId: string) => void;
   onDeleteGroup?: (groupId: string) => void;
 }
@@ -18,6 +19,7 @@ export function TaskGroupSection({
   onToggleComplete,
   onArchive,
   onClickTask,
+  onDeleteTask,
   onToggleCollapse,
   onDeleteGroup,
 }: TaskGroupSectionProps) {
@@ -113,6 +115,7 @@ export function TaskGroupSection({
               onToggleComplete={onToggleComplete}
               onArchive={onArchive}
               onClick={onClickTask}
+              onDelete={onDeleteTask}
             />
           ))}
         </div>

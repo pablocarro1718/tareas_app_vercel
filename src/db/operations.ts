@@ -190,6 +190,7 @@ export async function createTask(
     folderId: data.folderId,
     taskGroupId: data.taskGroupId ?? null,
     text: data.text,
+    notes: '',
     priority: data.priority ?? null,
     isCompleted: false,
     isArchived: false,

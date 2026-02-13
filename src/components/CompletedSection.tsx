@@ -7,6 +7,7 @@ interface CompletedSectionProps {
   onToggleComplete: (id: string) => void;
   onArchive: (id: string) => void;
   onClickTask: (task: Task) => void;
+  onDeleteTask: (id: string) => void;
 }
 
 export function CompletedSection({
@@ -14,6 +15,7 @@ export function CompletedSection({
   onToggleComplete,
   onArchive,
   onClickTask,
+  onDeleteTask,
 }: CompletedSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const archivedTasks = tasks.filter((t) => t.isArchived);
@@ -56,6 +58,7 @@ export function CompletedSection({
               onToggleComplete={onToggleComplete}
               onArchive={onArchive}
               onClick={onClickTask}
+              onDelete={onDeleteTask}
             />
           ))}
         </div>

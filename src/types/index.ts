@@ -27,6 +27,7 @@ export interface Task {
   folderId: string;
   taskGroupId: string | null;
   text: string;
+  notes: string;
   priority: 'low' | 'mid' | 'high' | null;
   isCompleted: boolean;
   isArchived: boolean;

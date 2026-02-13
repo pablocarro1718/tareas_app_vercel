@@ -12,6 +12,7 @@ import {
   deleteTask,
   updateFolder,
   deleteFolder,
+  createTask,
   createTaskGroup,
 } from '../db/operations';
 import { TaskGroupSection } from './TaskGroupSection';
@@ -19,6 +20,8 @@ import { CompletedSection } from './CompletedSection';
 import { EditTaskModal } from './EditTaskModal';
 import { EditFolderModal } from './EditFolderModal';
 import { CreateTaskGroupModal } from './CreateTaskGroupModal';
+import { ChatInput } from './ChatInput';
+import { parseTaskInput } from '../services/parser';
 import type { Task } from '../types';
 
 interface FolderScreenProps {
@@ -62,7 +65,7 @@ export function FolderScreen({ folderId, onBack }: FolderScreenProps) {
 
   const handleSaveTask = async (
     id: string,
-    changes: { text: string; priority: Task['priority']; folderId: string }
+    changes: { text: string; notes: string; priority: Task['priority']; folderId: string }
   ) => {
     await updateTask(id, changes);
     setEditingTask(null);
@@ -95,6 +98,31 @@ export function FolderScreen({ folderId, onBack }: FolderScreenProps) {
   const handleCreateTaskGroup = async (name: string) => {
     await createTaskGroup({ folderId, name });
     setShowCreateGroup(false);
+  };
+
+  const handleChatSubmit = async (rawText: string) => {
+    const { text, taskGroupName, priority } = parseTaskInput(rawText);
+    if (!text) return;
+
+    let taskGroupId: string | null = null;
+    if (taskGroupName) {
+      const existingGroup = taskGroups.find(
+        (g) => g.name.toLowerCase() === taskGroupName.toLowerCase()
+      );
+      if (existingGroup) {
+        taskGroupId = existingGroup.id;
+      } else {
+        const newGroup = await createTaskGroup({ folderId, name: taskGroupName });
+        taskGroupId = newGroup.id;
+      }
+    }
+
+    await createTask({
+      folderId,
+      taskGroupId: taskGroupId ?? undefined,
+      text,
+      priority,
+    });
   };
 
   return (
@@ -141,7 +169,7 @@ export function FolderScreen({ folderId, onBack }: FolderScreenProps) {
       </header>
 
       {/* Content */}
-      <div className="flex-1 px-4 pb-6 space-y-4 overflow-y-auto">
+      <div className="flex-1 px-4 pb-4 space-y-4 overflow-y-auto">
         {/* General section */}
         <TaskGroupSection
           group={null}
@@ -149,6 +177,7 @@ export function FolderScreen({ folderId, onBack }: FolderScreenProps) {
           onToggleComplete={handleToggleComplete}
           onArchive={handleArchive}
           onClickTask={handleClickTask}
+          onDeleteTask={handleDeleteTask}
         />
 
         {/* Task groups */}
@@ -160,6 +189,7 @@ export function FolderScreen({ folderId, onBack }: FolderScreenProps) {
             onToggleComplete={handleToggleComplete}
             onArchive={handleArchive}
             onClickTask={handleClickTask}
+            onDeleteTask={handleDeleteTask}
             onToggleCollapse={handleToggleCollapse}
             onDeleteGroup={handleDeleteTaskGroup}
           />
@@ -172,7 +202,7 @@ export function FolderScreen({ folderId, onBack }: FolderScreenProps) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <p className="text-base">Sin tareas</p>
-            <p className="text-sm mt-1">Usa el chat en Home para añadir tareas</p>
+            <p className="text-sm mt-1">Escribe abajo para añadir una tarea</p>
           </div>
         )}
 
@@ -182,14 +212,17 @@ export function FolderScreen({ folderId, onBack }: FolderScreenProps) {
           onToggleComplete={handleToggleComplete}
           onArchive={handleArchive}
           onClickTask={handleClickTask}
+          onDeleteTask={handleDeleteTask}
         />
       </div>
+
+      {/* Chat input (fixed bottom) */}
+      <ChatInput onSubmit={handleChatSubmit} />
 
       {/* Modals */}
       {editingTask && (
         <EditTaskModal
           task={editingTask}
-          onClose={() => setEditingTask(null)}
           onSave={handleSaveTask}
           onDelete={handleDeleteTask}
         />

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import type { Task } from '../types';
 
 interface TaskItemProps {
@@ -6,6 +6,7 @@ interface TaskItemProps {
   onToggleComplete: (id: string) => void;
   onArchive: (id: string) => void;
   onClick: (task: Task) => void;
+  onDelete: (id: string) => void;
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -16,14 +17,34 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 const SWIPE_THRESHOLD = 100;
 
-export function TaskItem({ task, onToggleComplete, onArchive, onClick }: TaskItemProps) {
+export function TaskItem({ task, onToggleComplete, onArchive, onClick, onDelete }: TaskItemProps) {
   const [justCompleted, setJustCompleted] = useState(false);
   const [swipeX, setSwipeX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const [swipedAway, setSwipedAway] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const isHorizontalSwipe = useRef<boolean | null>(null);
+
+  // Long press detection
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didLongPress = useRef(false);
+
+  const startLongPress = useCallback(() => {
+    didLongPress.current = false;
+    longPressTimer.current = setTimeout(() => {
+      didLongPress.current = true;
+      setShowDeleteConfirm(true);
+    }, 600);
+  }, []);
+
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
 
   const handleComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -40,6 +61,7 @@ export function TaskItem({ task, onToggleComplete, onArchive, onClick }: TaskIte
     touchStartY.current = e.touches[0].clientY;
     isHorizontalSwipe.current = null;
     setSwiping(true);
+    startLongPress();
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -51,6 +73,8 @@ export function TaskItem({ task, onToggleComplete, onArchive, onClick }: TaskIte
     // Determine direction on first significant move
     if (isHorizontalSwipe.current === null && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
       isHorizontalSwipe.current = Math.abs(dx) > Math.abs(dy);
+      // Cancel long press if user moves finger
+      cancelLongPress();
     }
 
     if (!isHorizontalSwipe.current) return;
@@ -64,6 +88,7 @@ export function TaskItem({ task, onToggleComplete, onArchive, onClick }: TaskIte
   const handleTouchEnd = () => {
     setSwiping(false);
     isHorizontalSwipe.current = null;
+    cancelLongPress();
 
     if (swipeX >= SWIPE_THRESHOLD) {
       // Animate out then archive
@@ -72,6 +97,14 @@ export function TaskItem({ task, onToggleComplete, onArchive, onClick }: TaskIte
     } else {
       setSwipeX(0);
     }
+  };
+
+  const handleClick = () => {
+    if (didLongPress.current) {
+      didLongPress.current = false;
+      return;
+    }
+    onClick(task);
   };
 
   if (swipedAway) {
@@ -96,12 +129,19 @@ export function TaskItem({ task, onToggleComplete, onArchive, onClick }: TaskIte
 
       {/* Task card */}
       <div
-        className="relative flex items-center gap-3 px-4 py-3 bg-white rounded-lg"
+        className="relative flex items-center gap-3 px-4 py-3 bg-white rounded-lg select-none"
         style={{
           transform: `translateX(${swipeX}px)`,
           transition: swiping ? 'none' : 'transform 0.2s ease-out',
         }}
-        onClick={() => onClick(task)}
+        onClick={handleClick}
+        onMouseDown={startLongPress}
+        onMouseUp={cancelLongPress}
+        onMouseLeave={cancelLongPress}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setShowDeleteConfirm(true);
+        }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -143,6 +183,13 @@ export function TaskItem({ task, onToggleComplete, onArchive, onClick }: TaskIte
           )}
         </span>
 
+        {/* Notes indicator */}
+        {task.notes && !task.isCompleted && (
+          <svg className="w-3.5 h-3.5 text-slate-300 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+          </svg>
+        )}
+
         {/* Priority indicator */}
         {task.priority && !task.isCompleted && (
           <div
@@ -151,6 +198,38 @@ export function TaskItem({ task, onToggleComplete, onArchive, onClick }: TaskIte
           />
         )}
       </div>
+
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowDeleteConfirm(false)} />
+          <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-xs p-5 space-y-4">
+            <p className="text-base text-slate-800 text-center">
+              Eliminar tarea?
+            </p>
+            <p className="text-sm text-slate-500 text-center truncate px-2">
+              {task.text}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-2.5 rounded-lg text-slate-600 bg-slate-100 font-medium active:bg-slate-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  onDelete(task.id);
+                }}
+                className="flex-1 py-2.5 rounded-lg text-white bg-red-500 font-medium active:bg-red-600 transition-colors"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
