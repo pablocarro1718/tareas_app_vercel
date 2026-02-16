@@ -227,6 +227,14 @@ export async function getPendingTaskCount(folderId: string): Promise<number> {
     .count();
 }
 
+export async function getHighPriorityTaskCount(folderId: string): Promise<number> {
+  return db.tasks
+    .where('folderId')
+    .equals(folderId)
+    .filter((t) => !t.isCompleted && !t.isArchived && t.priority === 'high')
+    .count();
+}
+
 export async function updateTask(
   id: string,
   changes: Partial<Omit<Task, 'id' | 'createdAt'>>

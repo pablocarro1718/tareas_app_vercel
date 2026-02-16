@@ -8,6 +8,7 @@ interface CompletedSectionProps {
   onArchive: (id: string) => void;
   onClickTask: (task: Task) => void;
   onDeleteTask: (id: string) => void;
+  folderColor?: string;
 }
 
 export function CompletedSection({
@@ -16,6 +17,7 @@ export function CompletedSection({
   onArchive,
   onClickTask,
   onDeleteTask,
+  folderColor,
 }: CompletedSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const archivedTasks = tasks.filter((t) => t.isArchived);
@@ -27,10 +29,10 @@ export function CompletedSection({
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-2 w-full px-1 py-2 active:bg-slate-100 rounded-lg"
+        className="flex items-center gap-2 w-full px-1 py-2 active:bg-zinc-800/50 rounded-lg"
       >
         <svg
-          className={`w-4 h-4 text-slate-400 transition-transform ${
+          className={`w-4 h-4 text-zinc-500 transition-transform ${
             isExpanded ? 'rotate-90' : ''
           }`}
           fill="none"
@@ -41,11 +43,11 @@ export function CompletedSection({
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
         </svg>
 
-        <span className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
+        <span className="text-sm font-semibold text-zinc-500 uppercase tracking-wide">
           Completadas
         </span>
 
-        <span className="text-xs text-slate-400">{archivedTasks.length}</span>
+        <span className="text-xs text-zinc-600">{archivedTasks.length}</span>
       </button>
 
       {/* Archived tasks */}
@@ -59,6 +61,7 @@ export function CompletedSection({
               onArchive={onArchive}
               onClick={onClickTask}
               onDelete={onDeleteTask}
+              folderColor={folderColor}
             />
           ))}
         </div>

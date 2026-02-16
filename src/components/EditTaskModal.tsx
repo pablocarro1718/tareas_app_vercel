@@ -22,15 +22,19 @@ export function EditTaskModal({ task, onSave, onDelete }: EditTaskModalProps) {
   const [priority, setPriority] = useState<Task['priority']>(task.priority);
   const [folderId, setFolderId] = useState(task.folderId);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [closing, setClosing] = useState(false);
   const notesRef = useRef<HTMLTextAreaElement>(null);
 
   const folders = useLiveQuery(() => getFolders(), [], []);
 
-  // Auto-save on close
+  // Auto-save on close with slide-out animation
   const saveAndClose = () => {
     const trimmed = text.trim();
     if (!trimmed) return;
-    onSave(task.id, { text: trimmed, notes: notes.trim(), priority, folderId });
+    setClosing(true);
+    setTimeout(() => {
+      onSave(task.id, { text: trimmed, notes: notes.trim(), priority, folderId });
+    }, 300);
   };
 
   // Auto-resize notes textarea
@@ -42,26 +46,37 @@ export function EditTaskModal({ task, onSave, onDelete }: EditTaskModalProps) {
   }, [notes]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-50">
+    <div
+      className="fixed inset-0 z-50 bg-black"
+      style={{
+        animation: closing
+          ? 'slide-out-right 300ms ease-in forwards'
+          : 'slide-in-right 300ms ease-out',
+      }}
+    >
       {/* Header */}
-      <header className="flex items-center gap-3 px-4 pt-14 pb-3 bg-white border-b border-slate-100">
+      <header
+        className="flex items-center gap-3 px-4 pt-14 pb-3"
+        style={{ backgroundColor: '#1c1c1e', borderBottom: '1px solid #27272a' }}
+      >
         <button
           onClick={saveAndClose}
-          className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 active:bg-slate-200 transition-colors"
+          className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-400 active:opacity-80 transition-colors"
+          style={{ backgroundColor: '#2c2c2e' }}
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
           </svg>
         </button>
 
-        <h1 className="flex-1 text-lg font-semibold text-slate-800">Tarea</h1>
+        <h1 className="flex-1 text-lg font-semibold text-white">Tarea</h1>
 
         {/* Delete button */}
         {confirmDelete ? (
           <div className="flex items-center gap-2">
             <button
               onClick={() => setConfirmDelete(false)}
-              className="text-xs text-slate-500 px-2 py-1"
+              className="text-xs text-zinc-400 px-2 py-1"
             >
               No
             </button>
@@ -75,7 +90,7 @@ export function EditTaskModal({ task, onSave, onDelete }: EditTaskModalProps) {
         ) : (
           <button
             onClick={() => setConfirmDelete(true)}
-            className="w-9 h-9 flex items-center justify-center rounded-full text-slate-400 active:bg-slate-100 transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-400 active:bg-zinc-800 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
@@ -93,13 +108,13 @@ export function EditTaskModal({ task, onSave, onDelete }: EditTaskModalProps) {
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Nombre de la tarea"
-            className="w-full text-lg font-medium text-slate-800 placeholder:text-slate-300 bg-transparent border-none focus:outline-none"
+            className="w-full text-lg font-medium text-white placeholder:text-zinc-500 bg-transparent border-none focus:outline-none"
           />
         </div>
 
         {/* Priority */}
         <div>
-          <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">Prioridad</label>
+          <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wide mb-2">Prioridad</label>
           <div className="flex gap-2">
             {PRIORITIES.map((p) => (
               <button
@@ -107,8 +122,8 @@ export function EditTaskModal({ task, onSave, onDelete }: EditTaskModalProps) {
                 onClick={() => setPriority(p.value)}
                 className="flex-1 py-2 rounded-lg text-sm font-medium transition-all"
                 style={{
-                  backgroundColor: priority === p.value ? p.color + '20' : '#f1f5f9',
-                  color: priority === p.value ? p.color : '#64748b',
+                  backgroundColor: priority === p.value ? p.color + '20' : '#27272a',
+                  color: priority === p.value ? p.color : '#a1a1aa',
                   border: priority === p.value ? `2px solid ${p.color}` : '2px solid transparent',
                 }}
               >
@@ -120,24 +135,26 @@ export function EditTaskModal({ task, onSave, onDelete }: EditTaskModalProps) {
 
         {/* Notes */}
         <div>
-          <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">Notas</label>
+          <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wide mb-2">Notas</label>
           <textarea
             ref={notesRef}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Escribe notas, ideas, detalles..."
             rows={4}
-            className="w-full px-3 py-3 rounded-xl bg-white border border-slate-200 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            className="w-full px-3 py-3 rounded-xl border text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            style={{ backgroundColor: '#1c1c1e', borderColor: '#3f3f46' }}
           />
         </div>
 
         {/* Folder */}
         <div>
-          <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">Carpeta</label>
+          <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wide mb-2">Carpeta</label>
           <select
             value={folderId}
             onChange={(e) => setFolderId(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2.5 rounded-xl border text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            style={{ backgroundColor: '#1c1c1e', borderColor: '#3f3f46' }}
           >
             {folders.map((f) => (
               <option key={f.id} value={f.id}>

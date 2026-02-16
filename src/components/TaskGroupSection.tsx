@@ -11,6 +11,7 @@ interface TaskGroupSectionProps {
   onDeleteTask: (id: string) => void;
   onToggleCollapse?: (groupId: string) => void;
   onDeleteGroup?: (groupId: string) => void;
+  folderColor?: string;
 }
 
 export function TaskGroupSection({
@@ -22,6 +23,7 @@ export function TaskGroupSection({
   onDeleteTask,
   onToggleCollapse,
   onDeleteGroup,
+  folderColor,
 }: TaskGroupSectionProps) {
   const isGeneral = group === null;
   const isCollapsed = group?.isCollapsed ?? false;
@@ -77,14 +79,14 @@ export function TaskGroupSection({
           }
         }}
         className={`flex items-center gap-2 w-full px-1 py-2 select-none ${
-          isGeneral ? '' : 'active:bg-slate-100 rounded-lg'
+          isGeneral ? '' : 'active:bg-zinc-800/50 rounded-lg'
         }`}
         disabled={isGeneral}
       >
         {/* Collapse chevron (not for General) */}
         {!isGeneral && (
           <svg
-            className={`w-4 h-4 text-slate-400 transition-transform ${
+            className={`w-4 h-4 text-zinc-500 transition-transform ${
               isCollapsed ? '' : 'rotate-90'
             }`}
             fill="none"
@@ -96,12 +98,12 @@ export function TaskGroupSection({
           </svg>
         )}
 
-        <span className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
+        <span className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
           {isGeneral ? 'General' : group!.name}
         </span>
 
         {pendingCount > 0 && (
-          <span className="text-xs text-slate-400">{pendingCount}</span>
+          <span className="text-xs text-zinc-500">{pendingCount}</span>
         )}
       </button>
 
@@ -116,6 +118,7 @@ export function TaskGroupSection({
               onArchive={onArchive}
               onClick={onClickTask}
               onDelete={onDeleteTask}
+              folderColor={folderColor}
             />
           ))}
         </div>
@@ -123,19 +126,23 @@ export function TaskGroupSection({
 
       {/* Delete confirmation modal */}
       {showDeleteConfirm && group && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowDeleteConfirm(false)} />
-          <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-xs p-5 space-y-4">
-            <p className="text-base text-slate-800 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)} />
+          <div
+            className="relative rounded-2xl w-full max-w-xs p-5 space-y-4"
+            style={{ backgroundColor: '#1c1c1e', animation: 'modal-enter 200ms ease-out' }}
+          >
+            <p className="text-base text-white text-center">
               Eliminar grupo <strong>{group.name}</strong>?
             </p>
-            <p className="text-sm text-slate-500 text-center">
+            <p className="text-sm text-zinc-400 text-center">
               Las tareas se moverán a General.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 py-2.5 rounded-lg text-slate-600 bg-slate-100 font-medium active:bg-slate-200 transition-colors"
+                className="flex-1 py-2.5 rounded-lg text-zinc-400 font-medium active:opacity-80 transition-colors"
+                style={{ backgroundColor: '#2c2c2e' }}
               >
                 Cancelar
               </button>

@@ -4,9 +4,10 @@ interface CreateTaskGroupModalProps {
   open: boolean;
   onClose: () => void;
   onSave: (name: string) => void;
+  accentColor?: string;
 }
 
-export function CreateTaskGroupModal({ open, onClose, onSave }: CreateTaskGroupModalProps) {
+export function CreateTaskGroupModal({ open, onClose, onSave, accentColor }: CreateTaskGroupModalProps) {
   const [name, setName] = useState('');
 
   if (!open) return null;
@@ -23,14 +24,17 @@ export function CreateTaskGroupModal({ open, onClose, onSave }: CreateTaskGroupM
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm p-6 space-y-5">
-        <h2 className="text-lg font-semibold text-slate-800">Nuevo grupo</h2>
+      <div
+        className="relative rounded-2xl w-full max-w-sm p-6 space-y-5"
+        style={{ backgroundColor: '#1c1c1e', animation: 'modal-enter 200ms ease-out' }}
+      >
+        <h2 className="text-lg font-semibold text-white">Nuevo grupo</h2>
 
         <div>
-          <label className="block text-sm text-slate-500 mb-1">Nombre</label>
+          <label className="block text-sm text-zinc-400 mb-1">Nombre</label>
           <input
             autoFocus
             type="text"
@@ -38,21 +42,24 @@ export function CreateTaskGroupModal({ open, onClose, onSave }: CreateTaskGroupM
             onChange={(e) => setName(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ej: Urgente, Esta semana..."
-            className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2.5 rounded-lg border text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            style={{ backgroundColor: '#2c2c2e', borderColor: '#3f3f46' }}
           />
         </div>
 
         <div className="flex gap-3 pt-2">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-lg text-slate-600 bg-slate-100 font-medium active:bg-slate-200 transition-colors"
+            className="flex-1 py-2.5 rounded-lg text-zinc-400 font-medium active:opacity-80 transition-colors"
+            style={{ backgroundColor: '#2c2c2e' }}
           >
             Cancelar
           </button>
           <button
             onClick={handleSave}
             disabled={!name.trim()}
-            className="flex-1 py-2.5 rounded-lg text-white bg-blue-500 font-medium active:bg-blue-600 transition-colors disabled:opacity-40"
+            className="flex-1 py-2.5 rounded-lg text-white font-medium transition-colors disabled:opacity-40"
+            style={{ backgroundColor: accentColor || '#3b82f6' }}
           >
             Guardar
           </button>

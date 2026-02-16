@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { getPendingTaskCount } from '../db/operations';
+import { getPendingTaskCount, getHighPriorityTaskCount } from '../db/operations';
 import type { Folder } from '../types';
 
 interface FolderCardProps {
@@ -13,40 +13,58 @@ export function FolderCard({ folder, onClick }: FolderCardProps) {
     [folder.id],
     0
   );
+  const highPriorityCount = useLiveQuery(
+    () => getHighPriorityTaskCount(folder.id),
+    [folder.id],
+    0
+  );
 
   return (
     <button
       onClick={onClick}
-      className="w-full rounded-xl p-4 flex items-center gap-3 active:scale-[0.98] transition-transform"
-      style={{ backgroundColor: folder.color + '18' }}
+      className="w-full rounded-2xl p-4 flex items-center gap-3 active:scale-[0.98] transition-transform"
+      style={{ backgroundColor: folder.color }}
     >
-      {/* Color dot */}
-      <div
-        className="w-3 h-3 rounded-full shrink-0"
-        style={{ backgroundColor: folder.color }}
-      />
-
-      {/* Name and count */}
+      {/* Left content */}
       <div className="flex-1 text-left">
-        <p className="font-medium text-slate-800">{folder.name}</p>
-      </div>
+        <p className="font-bold text-white text-lg">{folder.name}</p>
 
-      {/* Pending count */}
-      {pendingCount > 0 && (
-        <span
-          className="text-sm font-medium px-2 py-0.5 rounded-full"
-          style={{ color: folder.color }}
-        >
-          {pendingCount}
-        </span>
-      )}
+        {/* Keywords + stats pills */}
+        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+          {folder.keywords.slice(0, 3).map((kw) => (
+            <span
+              key={kw}
+              className="px-2 py-0.5 rounded-full text-[11px] font-medium"
+              style={{ backgroundColor: 'rgba(255,255,255,0.25)', color: 'white' }}
+            >
+              {kw}
+            </span>
+          ))}
+          {pendingCount > 0 && (
+            <span
+              className="px-2 py-0.5 rounded-full text-[11px] font-medium"
+              style={{ backgroundColor: 'rgba(255,255,255,0.25)', color: 'white' }}
+            >
+              {pendingCount} {pendingCount === 1 ? 'tarea' : 'tareas'}
+            </span>
+          )}
+          {highPriorityCount > 0 && (
+            <span
+              className="px-2 py-0.5 rounded-full text-[11px] font-medium"
+              style={{ backgroundColor: 'rgba(255,255,255,0.35)', color: 'white' }}
+            >
+              {highPriorityCount} urgente{highPriorityCount !== 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+      </div>
 
       {/* Arrow */}
       <svg
-        className="w-5 h-5 text-slate-400 shrink-0"
+        className="w-6 h-6 text-white shrink-0"
         fill="none"
         viewBox="0 0 24 24"
-        strokeWidth={2}
+        strokeWidth={2.5}
         stroke="currentColor"
       >
         <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
